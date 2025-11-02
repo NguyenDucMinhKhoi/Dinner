@@ -1,98 +1,208 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
-import { HelloWave } from '@/src/components/hello-wave';
-import ParallaxScrollView from '@/src/components/parallax-scroll-view';
-import { ThemedText } from '@/src/components/themed-text';
-import { ThemedView } from '@/src/components/themed-view';
-import { Link } from 'expo-router';
+import { ThemedText } from "@/src/components/themed-text";
 
-export default function HomeScreen() {
+export default function WelcomeScreen() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+
+  const headerHeight = Math.max(220, Math.round(width * 0.55));
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/src/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.safe}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header with gradient background and couple illustration */}
+        <LinearGradient
+          colors={["#FF85B3", "#FFB3D1"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.header, { height: headerHeight }]}
+        >
+          <View
+            style={[
+              styles.headerCircle,
+              {
+                width: headerHeight * 1.3,
+                height: headerHeight * 1.3,
+                borderRadius: (headerHeight * 1.3) / 2,
+              },
+            ]}
+          />
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+          {/* Couple illustration inside header */}
+          <View style={styles.coupleContainer}>
+            <Image
+              source={require("@/src/assets/images/Frame 2.png")}
+              style={styles.personImage}
+              contentFit="contain"
+            />
+            <Image
+              source={require("@/src/assets/images/Frame 1.png")}
+              style={styles.personImage}
+              contentFit="contain"
+            />
+          </View>
+        </LinearGradient>
+
+        {/* Main content */}
+        <View style={styles.content}>
+          {/* Card with text and button */}
+          <View style={[styles.card, { maxWidth: Math.min(720, width - 40) }]}>
+            {/* Logo/Icon - Smaller heart */}
+            <View style={styles.logoContainer}>
+              <LinearGradient
+                colors={["#FF85B3", "#E91E63"]}
+                style={styles.logo}
+              >
+                <ThemedText style={styles.logoText}>♥</ThemedText>
+              </LinearGradient>
+            </View>
+
+            {/* Title */}
+            <ThemedText style={styles.title}>
+              Explore the vibe, find my match
+            </ThemedText>
+
+            {/* Description */}
+            <ThemedText style={styles.description}>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi
+              maecenas quis interdum enim enim molestie faucibus. Pretium non
+              massa eros, nunc, urna. Ac laoreet sagittis donec vel. Amet, duis
+              justo, quam quisque egestas. Pretium enim dictum accumsan.
+              Suspendisse.
+            </ThemedText>
+
+            {/* CTA Button */}
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.push("/auth")}
+              activeOpacity={0.85}
+            >
+              <ThemedText style={styles.buttonText}>Lets Start</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  safe: { flex: 1, backgroundColor: "#FFFFFF" },
+  scrollContent: { flexGrow: 1 },
+  header: {
+    position: "relative",
+    overflow: "visible",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  headerCircle: {
+    position: "absolute",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    top: -40,
+    right: -40,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 140,
+    paddingBottom: 40,
+    alignItems: "center",
+  },
+  illustrationContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+    width: "100%",
+  },
+  coupleContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    marginBottom: -180,
+    paddingHorizontal: 20,
+  },
+  personImage: {
+    width: 180,
+    height: 360,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 8,
+    alignItems: "center",
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  logo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoText: {
+    fontSize: 20,
+    color: "#FFFFFF",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#2C2C2C",
+    marginBottom: 12,
+    lineHeight: 30,
+  },
+  description: {
+    fontSize: 14,
+    textAlign: "center",
+    color: "#757575",
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: "#FF85B3",
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 36,
+    alignItems: "center",
+    shadowColor: "#FF85B3",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+    width: "100%",
+    maxWidth: 420,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
