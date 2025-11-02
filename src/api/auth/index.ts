@@ -55,8 +55,6 @@ export async function verifyOtp(phone: string, code: string) {
     .eq("phone", phone)
     .single();
 
-  console.log("Error:", profileError);
-
   // If user exists, sign in with their user ID
   if (existingProfile && !profileError) {
     // User already has an account, just create a session
@@ -74,6 +72,9 @@ export async function verifyOtp(phone: string, code: string) {
     if (error) {
       throw error;
     }
+
+    console.log("Session data:", data.session);
+    console.log("User data:", data.user);
 
     return {
       session: data.session,
@@ -108,6 +109,9 @@ export async function verifyOtp(phone: string, code: string) {
     console.error("Failed to create profile:", profileCreateError);
     // Continue anyway - user is authenticated, profile can be created later
   }
+
+  console.log("Session data:", data.session);
+  console.log("User data:", data.user);
 
   return {
     session: data.session,
