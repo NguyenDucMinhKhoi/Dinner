@@ -14,12 +14,12 @@ import { ThemedText } from "@/src/components/themed-text";
 export default function AuthScreen() {
   const router = useRouter();
 
-  const handlePhoneSignup = () => {
-    router.push("/auth/phone-signup");
+  const handleEmailSignup = () => {
+    router.push("/auth/signup" as any);
   };
 
-  const handlePhoneLogin = () => {
-    router.push("/auth/phone-login");
+  const handleEmailLogin = () => {
+    router.push("/auth/login" as any);
   };
 
   const handleGoogleAuth = () => {
@@ -50,7 +50,7 @@ export default function AuthScreen() {
           {/* Logo */}
           <View style={styles.logoContainer}>
             <LinearGradient colors={["#FFFFFF", "#FFE5F0"]} style={styles.logo}>
-              <ThemedText style={styles.logoText}>♥</ThemedText>
+              <ThemedText style={styles.logoText}>❤️</ThemedText>
             </LinearGradient>
           </View>
         </LinearGradient>
@@ -66,14 +66,10 @@ export default function AuthScreen() {
           <View style={styles.primaryButtons}>
             <TouchableOpacity
               style={styles.signupButton}
-              onPress={handlePhoneSignup}
+              onPress={handleEmailSignup}
               activeOpacity={0.85}
             >
-              <Ionicons
-                name="phone-portrait-outline"
-                size={20}
-                color="#FFFFFF"
-              />
+              <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
               <ThemedText style={styles.signupButtonText}>
                 Create Account
               </ThemedText>
@@ -81,16 +77,12 @@ export default function AuthScreen() {
 
             <TouchableOpacity
               style={styles.loginButton}
-              onPress={handlePhoneLogin}
+              onPress={handleEmailLogin}
               activeOpacity={0.85}
             >
-              <Ionicons
-                name="phone-portrait-outline"
-                size={20}
-                color="#FF85B3"
-              />
+              <Ionicons name="mail-outline" size={20} color="#FF85B3" />
               <ThemedText style={styles.loginButtonText}>
-                Login with Phone
+                Login with Email
               </ThemedText>
             </TouchableOpacity>
           </View>
