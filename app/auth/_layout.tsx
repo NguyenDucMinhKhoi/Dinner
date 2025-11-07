@@ -9,8 +9,9 @@ export default function AuthLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen name="phone-signup" />
-      <Stack.Screen name="phone-login" />
+      <Stack.Screen name="signup" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="verify-otp" />
     </Stack>
   );
 }
