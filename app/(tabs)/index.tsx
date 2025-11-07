@@ -1,208 +1,111 @@
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+import { ThemedText } from "@/src/components/themed-text";
 import { useRouter } from "expo-router";
+import React from "react";
 import {
-  SafeAreaView,
-  ScrollView,
+  Dimensions,
+  Image,
   StyleSheet,
+  Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 
-import { ThemedText } from "@/src/components/themed-text";
+const DUMMY_PROFILES = [
+  {
+    id: "1",
+    name: "Alex",
+    age: 27,
+    img: require("@/src/assets/images/Frame 1.png"),
+  },
+  {
+    id: "2",
+    name: "Taylor",
+    age: 24,
+    img: require("@/src/assets/images/Frame 2.png"),
+  },
+  {
+    id: "3",
+    name: "Jordan",
+    age: 29,
+    img: require("@/src/assets/images/Frame 1.png"),
+  },
+];
 
-export default function WelcomeScreen() {
+export default function SwipeScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width } = Dimensions.get("window");
+  const cardWidth = Math.min(340, width - 40);
 
-  const headerHeight = Math.max(220, Math.round(width * 0.55));
+  const top = DUMMY_PROFILES[0];
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header with gradient background and couple illustration */}
-        <LinearGradient
-          colors={["#FF85B3", "#FFB3D1"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.header, { height: headerHeight }]}
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <ThemedText style={styles.title}>Discover</ThemedText>
+      </View>
+
+      <View style={styles.deckContainer}>
+        <View
+          style={[styles.card, { width: cardWidth, height: cardWidth * 1.25 }]}
         >
-          <View
-            style={[
-              styles.headerCircle,
-              {
-                width: headerHeight * 1.3,
-                height: headerHeight * 1.3,
-                borderRadius: (headerHeight * 1.3) / 2,
-              },
-            ]}
-          />
-
-          {/* Couple illustration inside header */}
-          <View style={styles.coupleContainer}>
-            <Image
-              source={require("@/src/assets/images/Frame 2.png")}
-              style={styles.personImage}
-              contentFit="contain"
-            />
-            <Image
-              source={require("@/src/assets/images/Frame 1.png")}
-              style={styles.personImage}
-              contentFit="contain"
-            />
-          </View>
-        </LinearGradient>
-
-        {/* Main content */}
-        <View style={styles.content}>
-          {/* Card with text and button */}
-          <View style={[styles.card, { maxWidth: Math.min(720, width - 40) }]}>
-            {/* Logo/Icon - Smaller heart */}
-            <View style={styles.logoContainer}>
-              <LinearGradient
-                colors={["#FF85B3", "#E91E63"]}
-                style={styles.logo}
-              >
-                <ThemedText style={styles.logoText}>♥</ThemedText>
-              </LinearGradient>
-            </View>
-
-            {/* Title */}
-            <ThemedText style={styles.title}>
-              Explore the vibe, find my match
+          <Image source={top.img} style={styles.image} resizeMode="cover" />
+          <View style={styles.cardFooter}>
+            <ThemedText style={styles.cardName}>
+              {top.name}, {top.age}
             </ThemedText>
-
-            {/* Description */}
-            <ThemedText style={styles.description}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi
-              maecenas quis interdum enim enim molestie faucibus. Pretium non
-              massa eros, nunc, urna. Ac laoreet sagittis donec vel. Amet, duis
-              justo, quam quisque egestas. Pretium enim dictum accumsan.
-              Suspendisse.
-            </ThemedText>
-
-            {/* CTA Button */}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => router.push("/auth")}
-              activeOpacity={0.85}
-            >
-              <ThemedText style={styles.buttonText}>Lets Start</ThemedText>
-            </TouchableOpacity>
+            <Text style={styles.cardSubtitle}>
+              Loves coffee, travel & good music
+            </Text>
           </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+      <View style={styles.controls}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.pass]}
+          onPress={() => {}}
+        >
+          <Text style={styles.actionText}>Pass</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.like]}
+          onPress={() => {
+            router.push("/profile-setup/upload-avatar");
+          }}
+        >
+          <Text style={styles.actionText}>Like</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFFFFF" },
-  scrollContent: { flexGrow: 1 },
-  header: {
-    position: "relative",
-    overflow: "visible",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingBottom: 20,
-  },
-  headerCircle: {
-    position: "absolute",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    top: -40,
-    right: -40,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 140,
-    paddingBottom: 40,
-    alignItems: "center",
-  },
-  illustrationContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-    width: "100%",
-  },
-  coupleContainer: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "center",
-    marginBottom: -180,
-    paddingHorizontal: 20,
-  },
-  personImage: {
-    width: 180,
-    height: 360,
-  },
+  container: { flex: 1, backgroundColor: "#fff", alignItems: "center" },
+  header: { width: "100%", padding: 20, alignItems: "center" },
+  title: { fontSize: 20, fontWeight: "700" },
+  deckContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: "#fff",
+    borderRadius: 16,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
     shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 8,
-    alignItems: "center",
+    shadowRadius: 10,
+    overflow: "hidden",
   },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  image: { width: "100%", height: "75%" },
+  cardFooter: { padding: 12 },
+  cardName: { fontSize: 18, fontWeight: "700" },
+  cardSubtitle: { fontSize: 13, color: "#666", marginTop: 6 },
+  controls: { flexDirection: "row", gap: 16, paddingBottom: 32 },
+  actionButton: {
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
   },
-  logoText: {
-    fontSize: 20,
-    color: "#FFFFFF",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    textAlign: "center",
-    color: "#2C2C2C",
-    marginBottom: 12,
-    lineHeight: 30,
-  },
-  description: {
-    fontSize: 14,
-    textAlign: "center",
-    color: "#757575",
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: "#FF85B3",
-    borderRadius: 24,
-    paddingVertical: 14,
-    paddingHorizontal: 36,
-    alignItems: "center",
-    shadowColor: "#FF85B3",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-    width: "100%",
-    maxWidth: 420,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
+  pass: { backgroundColor: "#eee" },
+  like: { backgroundColor: "#FF6B6B" },
+  actionText: { color: "#fff", fontWeight: "700" },
 });

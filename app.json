@@ -9,7 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to help you find dinner dates nearby.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to help you find dinner dates nearby.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload your profile picture.",
+        "NSCameraUsageDescription": "We need access to your camera to take your profile picture."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +25,14 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "output": "static",
@@ -27,6 +40,20 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to upload your profile picture.",
+          "cameraPermission": "The app needs access to your camera to take your profile picture."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Dinner to use your location to find dinner dates nearby.",
+          "locationWhenInUsePermission": "Allow Dinner to use your location to find dinner dates nearby."
+        }
+      ],
       [
         "expo-splash-screen",
         {

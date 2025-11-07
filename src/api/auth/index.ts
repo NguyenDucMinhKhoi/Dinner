@@ -1,121 +1,145 @@
-import {
-  sendOTP as firebaseSendOTP,
-  verifyOTP as firebaseVerifyOTP,
-} from "../firebase-otp";
 import { supabase } from "../supabase";
 
 /**
- * AUTH FLOW:
- * - Uses Firebase Phone Authentication to send real SMS OTP
- * - Requires reCAPTCHA verification (invisible on web)
- * - Free tier: Unlimited SMS (10K/day limit)
+ * AUTH FLOW - Supabase Email/Password Authentication
+ * - Simple and reliable email/password auth
+ * - Works on all platforms (Expo Go, web, native)
+ * - Built-in email verification support
  *
  * Setup required:
- * 1. Enable Phone Authentication in Firebase Console
- * 2. Add Firebase config to .env.development
+ * 1. Enable Email auth in Supabase Dashboard (Authentication > Providers > Email)
+ * 2. Configure email templates (optional)
  */
 
-/**
- * Send OTP to phone number using Firebase
- * @param phone - Phone number in E.164 format (e.g., +84765362207)
- * @returns OTP details (code NOT included - sent via SMS)
- */
-export async function sendOtp(phone: string) {
-  const result = await firebaseSendOTP(phone);
+export interface SignUpData {
+  email: string;
+  password: string;
+}
 
-  if (!result.ok || !result.data) {
-    throw new Error(result.error || "Failed to send OTP");
-  }
-
-  return {
-    phoneNumber: phone,
-    expiresAt: result.data.expires,
-    message: result.data.message_text,
-  };
+export interface SignInData {
+  email: string;
+  password: string;
 }
 
 /**
- * Verify OTP and create/login user in Supabase
- * @param phone - Phone number
- * @param code - OTP code entered by user
- * @returns Supabase session
+ * Check if email already exists
+ * @param email - Email to check
+ * @returns true if email exists, false otherwise
  */
-export async function verifyOtp(phone: string, code: string) {
-  // Verify OTP with Firebase (validates code, format, and expiration)
-  const verifyResult = await firebaseVerifyOTP(phone, code);
+export async function checkEmailExists(email: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("email", email.toLowerCase().trim())
+      .single();
 
-  if (!verifyResult.ok || !verifyResult.valid) {
-    throw new Error(verifyResult.error || "Invalid OTP code");
+    // If error and not "not found" error, throw it
+    if (error && error.code !== "PGRST116") {
+      throw error;
+    }
+
+    return !!data; // true if found, false if not
+  } catch {
+    return false; // Assume not exists on error
   }
+}
 
-  // Check if user with this phone number already exists
-  const { data: existingProfile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, phone")
-    .eq("phone", phone)
-    .single();
+/**
+ * Sign up with email and password
+ * @param data - Email and password
+ * @returns User session and profile data
+ */
+export async function signUp(data: SignUpData) {
+  try {
+    // Check if email already exists
+    const emailExists = await checkEmailExists(data.email);
+    if (emailExists) {
+      throw new Error("Email already registered. Please sign in instead.");
+    }
 
-  // If user exists, sign in with their user ID
-  if (existingProfile && !profileError) {
-    // User already has an account, just create a session
-    // Note: We use anonymous auth to create a session for existing user
-    const { data, error } = await supabase.auth.signInAnonymously({
-      options: {
-        data: {
-          phone: phone,
-          phone_verified: true,
-          verified_at: new Date().toISOString(),
-        },
-      },
+    // Sign up user with Supabase
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (authError) {
+      throw authError;
+    }
+
+    if (!authData.user) {
+      throw new Error("Failed to create user");
+    }
+
+  // user created
+
+    // NOTE: Profile will be created AFTER email verification
+    // See verify-otp.tsx for profile creation logic
+
+    // Note: session will be null if email confirmation is enabled
+    // User must verify email before they can sign in
+    const needsEmailVerification = !authData.session && authData.user;
+
+    return {
+      session: authData.session,
+      user: authData.user,
+      isNewUser: true,
+      needsEmailVerification, // true if user needs to verify email
+    };
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to sign up");
+  }
+}
+
+/**
+ * Sign in with email and password
+ * @param data - Email and password
+ * @returns User session
+ */
+export async function signIn(data: SignInData) {
+  try {
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
     });
 
     if (error) {
       throw error;
     }
 
-    console.log("Session data:", data.session);
-    console.log("User data:", data.user);
+  // signed in
+
+    // Get user profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_complete")
+      .eq("id", authData.user.id)
+      .single();
 
     return {
-      session: data.session,
-      user: data.user,
-      isNewUser: false,
+      session: authData.session,
+      user: authData.user,
+      isNewUser: !profile?.is_complete,
     };
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to sign in");
   }
+}
 
-  // User doesn't exist, create new account with anonymous auth
-  const { data, error } = await supabase.auth.signInAnonymously({
-    options: {
-      data: {
-        phone: phone,
-        phone_verified: true,
-        verified_at: new Date().toISOString(),
-      },
-    },
-  });
+/**
+ * Sign out current user
+ */
+export async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut();
 
-  if (error) {
-    throw error;
+    if (error) {
+      throw error;
+    }
+
+    // signed out
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to sign out");
   }
-
-  // Create profile for the new user
-  const { error: profileCreateError } = await supabase.from("profiles").insert({
-    id: data.user!.id,
-    phone: phone,
-    is_complete: false, // Profile not complete until user fills in details
-  });
-
-  if (profileCreateError) {
-    console.error("Failed to create profile:", profileCreateError);
-    // Continue anyway - user is authenticated, profile can be created later
-  }
-
-  console.log("Session data:", data.session);
-  console.log("User data:", data.user);
-
-  return {
-    session: data.session,
-    user: data.user,
-    isNewUser: true,
-  };
 }
