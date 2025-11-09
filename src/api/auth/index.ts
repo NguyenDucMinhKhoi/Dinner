@@ -1,3 +1,4 @@
+import type { SignInData, SignUpData } from "../../types/auth";
 import { supabase } from "../supabase";
 
 /**
@@ -10,16 +11,6 @@ import { supabase } from "../supabase";
  * 1. Enable Email auth in Supabase Dashboard (Authentication > Providers > Email)
  * 2. Configure email templates (optional)
  */
-
-export interface SignUpData {
-  email: string;
-  password: string;
-}
-
-export interface SignInData {
-  email: string;
-  password: string;
-}
 
 /**
  * Check if email already exists
@@ -72,7 +63,7 @@ export async function signUp(data: SignUpData) {
       throw new Error("Failed to create user");
     }
 
-  // user created
+    // user created
 
     // NOTE: Profile will be created AFTER email verification
     // See verify-otp.tsx for profile creation logic
@@ -108,7 +99,7 @@ export async function signIn(data: SignInData) {
       throw error;
     }
 
-  // signed in
+    // signed in
 
     // Get user profile
     const { data: profile } = await supabase

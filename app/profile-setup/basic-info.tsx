@@ -193,7 +193,7 @@ export default function BasicInfoScreen() {
                     gender === "male" && styles.genderTextActive,
                   ]}
                 >
-                  👨 Male
+                  Male
                 </Text>
               </Pressable>
 
@@ -210,7 +210,7 @@ export default function BasicInfoScreen() {
                     gender === "female" && styles.genderTextActive,
                   ]}
                 >
-                  👩 Female
+                  Female
                 </Text>
               </Pressable>
 
@@ -227,7 +227,7 @@ export default function BasicInfoScreen() {
                     gender === "other" && styles.genderTextActive,
                   ]}
                 >
-                  🌈 Other
+                  Other
                 </Text>
               </Pressable>
             </View>
