@@ -169,7 +169,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   logoText: {
-    fontSize: 40,
+    paddingTop: 4,
+    fontSize: 32,
+    lineHeight: 32,
+    textAlign: "center",
     color: "#FF85B3",
   },
   content: {

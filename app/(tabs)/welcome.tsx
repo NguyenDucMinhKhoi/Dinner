@@ -16,6 +16,9 @@ export default function WelcomeScreen() {
   const { width } = useWindowDimensions();
 
   const headerHeight = Math.max(220, Math.round(width * 0.55));
+  const coupleTop = Math.max(0, headerHeight - Math.round(headerHeight * 0.95));
+  // compute dynamic top padding for the content card so it sits higher on small screens
+  const contentPaddingTop = Math.max(140, Math.round(headerHeight * 0.22));
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -41,23 +44,31 @@ export default function WelcomeScreen() {
             ]}
           />
 
-          {/* Couple illustration inside header */}
-          <View style={styles.coupleContainer}>
-            <Image
-              source={require("@/src/assets/images/Frame 2.png")}
-              style={styles.personImage}
-              contentFit="contain"
-            />
-            <Image
-              source={require("@/src/assets/images/Frame 1.png")}
-              style={styles.personImage}
-              contentFit="contain"
-            />
-          </View>
+          {/* Couple illustration is rendered absolutely (outside ScrollView) */}
         </LinearGradient>
 
+        {/* Absolute-positioned couple illustration (kept outside ScrollView to avoid stacking issues) */}
+        <View
+          style={[
+            styles.coupleContainer,
+            { position: "absolute", top: coupleTop, left: 0, right: 0 },
+          ]}
+          pointerEvents="none"
+        >
+          <Image
+            source={require("@/src/assets/images/Frame 2.png")}
+            style={styles.personImage}
+            contentFit="contain"
+          />
+          <Image
+            source={require("@/src/assets/images/Frame 1.png")}
+            style={styles.personImage}
+            contentFit="contain"
+          />
+        </View>
+
         {/* Main content */}
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingTop: contentPaddingTop }]}>
           {/* Card with text and button */}
           <View style={[styles.card, { maxWidth: Math.min(720, width - 40) }]}>
             {/* Logo/Icon - Smaller heart */}
@@ -131,7 +142,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
-    marginBottom: -180,
     paddingHorizontal: 20,
     zIndex: 10,
     elevation: 10,
