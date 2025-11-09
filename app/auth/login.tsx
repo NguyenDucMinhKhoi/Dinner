@@ -1,4 +1,5 @@
 import { signIn } from "@/src/api/auth";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -119,7 +120,12 @@ export default function LoginScreen() {
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeButton}
             >
-              <Text style={styles.eyeIcon}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
+              <Ionicons
+                name={showPassword ? "eye" : "eye-off"}
+                size={20}
+                color="#666"
+                style={styles.eyeIcon}
+              />
             </TouchableOpacity>
           </View>
 

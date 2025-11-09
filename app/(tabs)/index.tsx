@@ -1,111 +1,210 @@
-import { ThemedText } from "@/src/components/themed-text";
+import { supabase } from "@/src/api/supabase";
+import AppHeader from "@/src/components/app-header";
+import { MatchModal } from "@/src/components/match-modal";
+import { SwipeCard } from "@/src/components/swipe-card";
+import { useSwipeController } from "@/src/hooks/use-swipe-controller";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
-  Image,
+  ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-
-const DUMMY_PROFILES = [
-  {
-    id: "1",
-    name: "Alex",
-    age: 27,
-    img: require("@/src/assets/images/Frame 1.png"),
-  },
-  {
-    id: "2",
-    name: "Taylor",
-    age: 24,
-    img: require("@/src/assets/images/Frame 2.png"),
-  },
-  {
-    id: "3",
-    name: "Jordan",
-    age: 29,
-    img: require("@/src/assets/images/Frame 1.png"),
-  },
-];
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function SwipeScreen() {
   const router = useRouter();
-  const { width } = Dimensions.get("window");
-  const cardWidth = Math.min(340, width - 40);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  const top = DUMMY_PROFILES[0];
+  // Get current user
+  useEffect(() => {
+    async function getUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+      setAuthLoading(false);
+    }
+    getUser();
+  }, []);
+
+  const {
+    currentCandidate,
+    loading,
+    error,
+    matchData,
+    handleLike,
+    handlePass,
+    dismissMatch,
+    hasMore,
+  } = useSwipeController(userId || "");
+
+  // Build main content depending on state so we can render the MatchModal
+  // in a single place below.
+  let content = null;
+
+  if (authLoading) {
+    content = (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  } else if (!userId) {
+    content = (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>Please sign in to continue</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push("/auth")}
+        >
+          <Text style={styles.buttonText}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  } else if (error && !currentCandidate) {
+    content = (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+          <Text style={styles.buttonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  } else if (loading && !currentCandidate) {
+    content = (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+        <Text style={styles.loadingText}>Finding people near you...</Text>
+      </View>
+    );
+  } else if (!currentCandidate && !hasMore) {
+    content = (
+      <View style={styles.centerContainer}>
+        <Text style={styles.emptyTitle}>No More People</Text>
+        <Text style={styles.emptyText}>
+          Check back later or adjust your preferences
+        </Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push("/(tabs)/profile")}
+        >
+          <Text style={styles.buttonText}>Edit Preferences</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  } else {
+    content = (
+      <>
+        <AppHeader title="Dinner" />
+
+        <View style={styles.cardContainer}>
+          {currentCandidate && (
+            <SwipeCard
+              candidate={currentCandidate}
+              onSwipeLeft={handlePass}
+              onSwipeRight={handleLike}
+              index={0}
+            />
+          )}
+        </View>
+
+        {/* Loading indicator when prefetching */}
+        {loading && (
+          <View style={styles.loadingIndicator}>
+            <ActivityIndicator size="small" color="#FF6B6B" />
+          </View>
+        )}
+      </>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <ThemedText style={styles.title}>Discover</ThemedText>
-      </View>
+    <GestureHandlerRootView style={styles.container}>
+      {content}
 
-      <View style={styles.deckContainer}>
-        <View
-          style={[styles.card, { width: cardWidth, height: cardWidth * 1.25 }]}
-        >
-          <Image source={top.img} style={styles.image} resizeMode="cover" />
-          <View style={styles.cardFooter}>
-            <ThemedText style={styles.cardName}>
-              {top.name}, {top.age}
-            </ThemedText>
-            <Text style={styles.cardSubtitle}>
-              Loves coffee, travel & good music
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.pass]}
-          onPress={() => {}}
-        >
-          <Text style={styles.actionText}>Pass</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.like]}
-          onPress={() => {
-            router.push("/profile-setup/upload-avatar");
+      {/* Single MatchModal render point */}
+      {matchData && (
+        <MatchModal
+          visible={!!matchData}
+          user={matchData.user}
+          matchId={matchData.matchId}
+          onSendMessage={() => {
+            dismissMatch();
+            router.push(`/(tabs)/matches`);
           }}
-        >
-          <Text style={styles.actionText}>Like</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          onKeepSwiping={dismissMatch}
+        />
+      )}
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", alignItems: "center" },
-  header: { width: "100%", padding: 20, alignItems: "center" },
-  title: { fontSize: 20, fontWeight: "700" },
-  deckContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: {
+  container: {
+    flex: 1,
     backgroundColor: "#fff",
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    overflow: "hidden",
   },
-  image: { width: "100%", height: "75%" },
-  cardFooter: { padding: 12 },
-  cardName: { fontSize: 18, fontWeight: "700" },
-  cardSubtitle: { fontSize: 13, color: "#666", marginTop: 6 },
-  controls: { flexDirection: "row", gap: 16, paddingBottom: 32 },
-  actionButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 999,
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+  header: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  cardContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  pass: { backgroundColor: "#eee" },
-  like: { backgroundColor: "#FF6B6B" },
-  actionText: { color: "#fff", fontWeight: "700" },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#FF6B6B",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 12,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  button: {
+    backgroundColor: "#FF6B6B",
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 30,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  loadingIndicator: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+  },
 });
