@@ -1,8 +1,8 @@
-import { updateProfilePreferences } from "@/src/api/profile";
+import { getCurrentProfile, updateProfilePreferences } from "@/src/api/profile";
 import { supabase } from "@/src/api/supabase";
 import Slider from "@react-native-community/slider";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,14 +16,39 @@ import {
 type SeekingGender = "male" | "female" | "both";
 
 export default function PreferencesScreen() {
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const isEditMode = params.mode === "edit";
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(isEditMode);
 
   // Preferences state
   const [seekingGender, setSeekingGender] = useState<SeekingGender>("both");
   const [ageMin, setAgeMin] = useState(18);
   const [ageMax, setAgeMax] = useState(35);
   const [distanceKm, setDistanceKm] = useState(10);
+
+  useEffect(() => {
+    if (isEditMode) {
+      loadProfileData();
+    }
+  }, [isEditMode]);
+
+  const loadProfileData = async () => {
+    try {
+      const profile = await getCurrentProfile();
+      if (profile) {
+        if (profile.seeking_gender)
+          setSeekingGender(profile.seeking_gender as SeekingGender);
+        if (profile.age_min) setAgeMin(profile.age_min);
+        if (profile.age_max) setAgeMax(profile.age_max);
+        if (profile.distance_km) setDistanceKm(profile.distance_km);
+      }
+    } catch (error: any) {
+      Alert.alert("Error", "Failed to load preferences");
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const handleNext = async () => {
     // Validation
@@ -52,16 +77,23 @@ export default function PreferencesScreen() {
       });
 
       // Navigate to upload avatar (step 5)
-      router.push({
-        pathname: "/profile-setup/upload-avatar" as any,
-        params: {
-          ...params,
-          seeking_gender: seekingGender,
-          age_min: ageMin.toString(),
-          age_max: ageMax.toString(),
-          distance_km: distanceKm.toString(),
-        },
-      });
+      if (isEditMode) {
+        router.push({
+          pathname: "/profile-setup/upload-avatar" as any,
+          params: { mode: "edit" },
+        });
+      } else {
+        router.push({
+          pathname: "/profile-setup/upload-avatar" as any,
+          params: {
+            ...params,
+            seeking_gender: seekingGender,
+            age_min: ageMin.toString(),
+            age_max: ageMax.toString(),
+            distance_km: distanceKm.toString(),
+          },
+        });
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to save preferences");
     } finally {
@@ -72,6 +104,19 @@ export default function PreferencesScreen() {
   const handleBack = () => {
     router.back();
   };
+
+  if (initialLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -84,8 +129,14 @@ export default function PreferencesScreen() {
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
-          <Text style={styles.title}>Dating Preferences</Text>
-          <Text style={styles.subtitle}>Set your match criteria (4/5)</Text>
+          <Text style={styles.title}>
+            {isEditMode ? "Edit Preferences" : "Dating Preferences"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isEditMode
+              ? "Update your match criteria"
+              : "Set your match criteria (4/5)"}
+          </Text>
         </View>
 
         {/* Seeking Gender */}

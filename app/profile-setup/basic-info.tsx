@@ -1,7 +1,7 @@
 import { getCurrentProfile, updateProfileBasicInfo } from "@/src/api/profile";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,9 @@ import {
 } from "react-native";
 
 export default function BasicInfoScreen() {
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const isEditMode = params.mode === "edit";
+
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [birthdate, setBirthdate] = useState(new Date());
@@ -25,6 +28,33 @@ export default function BasicInfoScreen() {
   );
   const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(isEditMode);
+
+  // Load existing profile data if in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      loadProfileData();
+    }
+  }, [isEditMode]);
+
+  const loadProfileData = async () => {
+    try {
+      const profile = await getCurrentProfile();
+      if (profile) {
+        setUsername(profile.username || "");
+        setPhone(profile.phone || "");
+        if (profile.birthdate) {
+          setBirthdate(new Date(profile.birthdate));
+        }
+        setGender(profile.gender as "male" | "female" | "other" | null);
+        setBio(profile.bio || "");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", "Failed to load profile data");
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const calculateAge = (birthDate: Date) => {
     const today = new Date();
@@ -76,17 +106,26 @@ export default function BasicInfoScreen() {
         bio,
       });
 
-      // Navigate to next screen with params
-      router.push({
-        pathname: "/profile-setup/interests" as any,
-        params: {
-          username: username.trim(),
-          ...(phone.trim() && { phone: phone.trim() }),
-          birthdate: birthdate.toISOString().split("T")[0],
-          gender,
-          bio,
-        },
-      });
+      // Navigate to next screen
+      if (isEditMode) {
+        // In edit mode, only pass mode parameter
+        router.push({
+          pathname: "/profile-setup/interests" as any,
+          params: { mode: "edit" },
+        });
+      } else {
+        // In setup mode, pass all data for the flow
+        router.push({
+          pathname: "/profile-setup/interests" as any,
+          params: {
+            username: username.trim(),
+            ...(phone.trim() && { phone: phone.trim() }),
+            birthdate: birthdate.toISOString().split("T")[0],
+            gender,
+            bio,
+          },
+        });
+      }
     } catch (error) {
       Alert.alert(
         "Error",
@@ -96,6 +135,14 @@ export default function BasicInfoScreen() {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -108,9 +155,13 @@ export default function BasicInfoScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>About You</Text>
+          <Text style={styles.title}>
+            {isEditMode ? "Edit Basic Info" : "About You"}
+          </Text>
           <Text style={styles.subtitle}>
-            Let&apos;s start with the basics (1/5)
+            {isEditMode
+              ? "Update your basic information"
+              : "Let's start with the basics (1/5)"}
           </Text>
         </View>
 
@@ -271,6 +322,12 @@ export default function BasicInfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fff",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#fff",
   },
   scrollContent: {

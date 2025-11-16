@@ -1,4 +1,4 @@
-import { updateProfileLocation } from "@/src/api/profile";
+import { getCurrentProfile, updateProfileLocation } from "@/src/api/profile";
 import { supabase } from "@/src/api/supabase";
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
@@ -22,8 +22,10 @@ interface LocationData {
 }
 
 export default function LocationScreen() {
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const isEditMode = params.mode === "edit";
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
   const [locationPermission, setLocationPermission] = useState(false);
   const [location, setLocation] = useState<LocationData>({
     address: "",
@@ -43,11 +45,38 @@ export default function LocationScreen() {
   useEffect(() => {
     const init = async () => {
       try {
+        // Load existing data if edit mode
+        if (isEditMode) {
+          setInitialLoading(true);
+          try {
+            const profile = await getCurrentProfile();
+            if (profile?.address && profile?.latitude && profile?.longitude) {
+              setLocation({
+                address: profile.address,
+                latitude: profile.latitude,
+                longitude: profile.longitude,
+              });
+              setRegion({
+                latitude: profile.latitude,
+                longitude: profile.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              });
+            }
+          } catch (error: any) {
+            console.error("Error loading location:", error);
+          } finally {
+            setInitialLoading(false);
+          }
+        }
+
         const { status } = await Location.requestForegroundPermissionsAsync();
 
         if (status === "granted") {
           setLocationPermission(true);
-          getCurrentLocation();
+          if (!isEditMode) {
+            getCurrentLocation();
+          }
         } else {
           setLocationPermission(false);
           Alert.alert(
@@ -57,11 +86,12 @@ export default function LocationScreen() {
         }
       } catch (error) {
         console.error("Error requesting location permission:", error);
+        setInitialLoading(false);
       }
     };
 
     init();
-  }, []);
+  }, [isEditMode]);
 
   const getCurrentLocation = async () => {
     try {
@@ -197,15 +227,22 @@ export default function LocationScreen() {
       await updateProfileLocation(user.id, location);
 
       // Navigate to next screen
-      router.push({
-        pathname: "/profile-setup/preferences",
-        params: {
-          ...params,
-          address: location.address,
-          latitude: location.latitude.toString(),
-          longitude: location.longitude.toString(),
-        },
-      });
+      if (isEditMode) {
+        router.push({
+          pathname: "/profile-setup/preferences",
+          params: { mode: "edit" },
+        });
+      } else {
+        router.push({
+          pathname: "/profile-setup/preferences",
+          params: {
+            ...params,
+            address: location.address,
+            latitude: location.latitude.toString(),
+            longitude: location.longitude.toString(),
+          },
+        });
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to save location");
     } finally {
@@ -228,9 +265,13 @@ export default function LocationScreen() {
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
-          <Text style={styles.title}>Your Location</Text>
+          <Text style={styles.title}>
+            {isEditMode ? "Edit Location" : "Your Location"}
+          </Text>
           <Text style={styles.subtitle}>
-            Where would you like to meet? (3/5)
+            {isEditMode
+              ? "Update your location"
+              : "Where would you like to meet? (3/5)"}
           </Text>
         </View>
 
