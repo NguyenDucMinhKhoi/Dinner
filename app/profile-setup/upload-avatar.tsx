@@ -1,9 +1,9 @@
 import { uploadToCloudinary } from "@/src/api/cloudinary";
-import { updateProfileAvatar } from "@/src/api/profile";
+import { getCurrentProfile, updateProfileAvatar } from "@/src/api/profile";
 import { supabase } from "@/src/api/supabase";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,10 +16,31 @@ import {
 } from "react-native";
 
 export default function UploadAvatarScreen() {
-  // const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const isEditMode = params.mode === "edit";
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [initialLoading, setInitialLoading] = useState(isEditMode);
+
+  useEffect(() => {
+    if (isEditMode) {
+      loadProfileData();
+    }
+  }, [isEditMode]);
+
+  const loadProfileData = async () => {
+    try {
+      const profile = await getCurrentProfile();
+      if (profile?.avatar_url) {
+        setImageUri(profile.avatar_url);
+      }
+    } catch (error: any) {
+      console.error("Error loading avatar:", error);
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const pickImageFromGallery = async () => {
     try {
@@ -96,16 +117,28 @@ export default function UploadAvatarScreen() {
         throw new Error("Not authenticated");
       }
 
-      // Upload to Cloudinary
-      const result = await uploadToCloudinary(imageUri);
+      // Get current profile to check if avatar already exists
+      const profile = await getCurrentProfile();
+      const hasExistingAvatar = profile?.avatar_url;
+
+      // Only upload if new image or no existing avatar
+      let avatarUrl = imageUri;
+      if (!hasExistingAvatar || !imageUri.startsWith("http")) {
+        // Upload to Cloudinary only if it's a new local image
+        const result = await uploadToCloudinary(imageUri);
+        avatarUrl = result.secure_url;
+      }
 
       // Save avatar and mark profile as complete
-      await updateProfileAvatar(user.id, result.secure_url);
+      await updateProfileAvatar(user.id, avatarUrl);
 
-      Alert.alert("Profile Complete! 🎉", "Let's find your dinner date!");
-
-      // Navigate to swipe screen (main app)
-      setTimeout(() => router.replace("/(tabs)"), 1500);
+      if (isEditMode) {
+        Alert.alert("Success", "Profile updated successfully!");
+        router.push("/(tabs)/profile");
+      } else {
+        Alert.alert("Profile Complete! 🎉", "Let's find your dinner date!");
+        setTimeout(() => router.replace("/(tabs)"), 1500);
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to upload photo");
     } finally {
@@ -114,6 +147,11 @@ export default function UploadAvatarScreen() {
   };
 
   const handleSkip = () => {
+    if (isEditMode) {
+      router.push("/(tabs)/profile");
+      return;
+    }
+
     Alert.alert(
       "Skip Photo?",
       "You can add your photo later in profile settings.",
@@ -152,6 +190,19 @@ export default function UploadAvatarScreen() {
     router.back();
   };
 
+  if (initialLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -163,8 +214,14 @@ export default function UploadAvatarScreen() {
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
-          <Text style={styles.title}>Upload Your Photo</Text>
-          <Text style={styles.subtitle}>Show your best smile! (5/5)</Text>
+          <Text style={styles.title}>
+            {isEditMode ? "Edit Photo" : "Upload Your Photo"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isEditMode
+              ? "Update your profile photo"
+              : "Show your best smile! (5/5)"}
+          </Text>
         </View>
 
         {/* Photo Preview */}
@@ -214,7 +271,9 @@ export default function UploadAvatarScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <Text style={styles.uploadButtonText}>
-                Upload your Photo & Complete Profile
+                {isEditMode
+                  ? "Save & Return to Profile"
+                  : "Upload your Photo & Complete Profile"}
               </Text>
             )}
           </Pressable>
