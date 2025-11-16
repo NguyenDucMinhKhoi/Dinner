@@ -7,26 +7,41 @@ type Props = {
   title?: string;
   onBellPress?: () => void;
   showDot?: boolean;
+  onRefresh?: () => void;
 };
 
 export default function AppHeader({
   title = "Dinner",
   onBellPress,
   showDot = true,
+  onRefresh,
 }: Props) {
   return (
     <View style={styles.container}>
       <ThemedText style={styles.title}>{title}</ThemedText>
 
-      <TouchableOpacity
-        accessibilityRole="button"
-        onPress={onBellPress}
-        style={styles.bellButton}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="notifications-outline" size={28} color="#6B6B6B" />
-        {showDot && <View style={styles.dot} />}
-      </TouchableOpacity>
+      <View style={styles.rightButtons}>
+        {onRefresh && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={onRefresh}
+            style={styles.iconButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="refresh-outline" size={24} color="#6B6B6B" />
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={onBellPress}
+          style={styles.bellButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="notifications-outline" size={28} color="#6B6B6B" />
+          {showDot && <View style={styles.dot} />}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -46,6 +61,17 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     fontWeight: "800",
     color: "#FF6B6B",
+  },
+  rightButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
   bellButton: {
     width: 40,
