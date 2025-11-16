@@ -1,8 +1,8 @@
-import { updateProfileInterests } from "@/src/api/profile";
+import { getCurrentProfile, updateProfileInterests } from "@/src/api/profile";
 import { supabase } from "@/src/api/supabase";
 import { INTEREST_OPTIONS, type InterestKey } from "@/src/constants/interests";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,9 +14,30 @@ import {
 } from "react-native";
 
 export default function InterestsScreen() {
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const isEditMode = params.mode === "edit";
   const [selectedInterests, setSelectedInterests] = useState<InterestKey[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(isEditMode);
+
+  useEffect(() => {
+    if (isEditMode) {
+      loadProfileData();
+    }
+  }, [isEditMode]);
+
+  const loadProfileData = async () => {
+    try {
+      const profile = await getCurrentProfile();
+      if (profile?.interests) {
+        setSelectedInterests(profile.interests as InterestKey[]);
+      }
+    } catch (error: any) {
+      Alert.alert("Error", "Failed to load interests");
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const toggleInterest = (interestKey: InterestKey) => {
     if (selectedInterests.includes(interestKey)) {
@@ -50,14 +71,21 @@ export default function InterestsScreen() {
       // Update interests in database
       await updateProfileInterests(user.id, selectedInterests);
 
-      // Navigate to next screen with all data
-      router.push({
-        pathname: "/profile-setup/location",
-        params: {
-          ...params,
-          interests: JSON.stringify(selectedInterests),
-        },
-      });
+      // Navigate to next screen
+      if (isEditMode) {
+        router.push({
+          pathname: "/profile-setup/location",
+          params: { mode: "edit" },
+        });
+      } else {
+        router.push({
+          pathname: "/profile-setup/location",
+          params: {
+            ...params,
+            interests: JSON.stringify(selectedInterests),
+          },
+        });
+      }
     } catch (error: any) {
       console.error("❌ Failed to save interests:", error);
       Alert.alert("Error", error.message || "Failed to save interests");
@@ -70,6 +98,19 @@ export default function InterestsScreen() {
     router.back();
   };
 
+  if (initialLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -81,9 +122,13 @@ export default function InterestsScreen() {
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
-          <Text style={styles.title}>Your Interests</Text>
+          <Text style={styles.title}>
+            {isEditMode ? "Edit Interests" : "Your Interests"}
+          </Text>
           <Text style={styles.subtitle}>
-            Choose at least 3 things you love (2/5)
+            {isEditMode
+              ? "Update your interests"
+              : "Choose at least 3 things you love (2/5)"}
           </Text>
           <Text style={styles.counter}>
             {selectedInterests.length}/10 selected
@@ -129,7 +174,9 @@ export default function InterestsScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.nextButtonText}>Next →</Text>
+            <Text style={styles.nextButtonText}>
+              {isEditMode ? "Continue →" : "Next →"}
+            </Text>
           )}
         </Pressable>
       </ScrollView>
